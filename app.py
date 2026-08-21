@@ -13,29 +13,37 @@ import uvicorn
 # Load environment variables
 load_dotenv()
 
-CSV_FILE = "cleaned_listings.csv"
+# Determine safe path for CSV in serverless (e.g. Vercel) vs local environments
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+if os.getenv("VERCEL") or os.getenv("AWS_LAMBDA_FUNCTION_NAME") or not os.access(BASE_DIR, os.W_OK):
+    CSV_FILE = "/tmp/cleaned_listings.csv"
+else:
+    CSV_FILE = os.path.join(BASE_DIR, "cleaned_listings.csv")
+
 CSV_HEADERS = ["bhk", "property_type", "locality", "area_sqft"]
 
 # Initialize CSV file strictly with only the 4 required fields
 def init_csv():
-    if not os.path.exists(CSV_FILE):
-        with open(CSV_FILE, mode="w", newline="", encoding="utf-8") as f:
-            writer = csv.writer(f)
-            writer.writerow(CSV_HEADERS)
-    else:
-        # If header doesn't match exact required columns, recreate with proper headers
-        try:
-            with open(CSV_FILE, mode="r", newline="", encoding="utf-8") as f:
-                reader = csv.reader(f)
-                header = next(reader, None)
-            if header != CSV_HEADERS:
-                with open(CSV_FILE, mode="w", newline="", encoding="utf-8") as f:
-                    writer = csv.writer(f)
-                    writer.writerow(CSV_HEADERS)
-        except Exception:
+    try:
+        if not os.path.exists(CSV_FILE):
             with open(CSV_FILE, mode="w", newline="", encoding="utf-8") as f:
                 writer = csv.writer(f)
                 writer.writerow(CSV_HEADERS)
+        else:
+            try:
+                with open(CSV_FILE, mode="r", newline="", encoding="utf-8") as f:
+                    reader = csv.reader(f)
+                    header = next(reader, None)
+                if header != CSV_HEADERS:
+                    with open(CSV_FILE, mode="w", newline="", encoding="utf-8") as f:
+                        writer = csv.writer(f)
+                        writer.writerow(CSV_HEADERS)
+            except Exception:
+                with open(CSV_FILE, mode="w", newline="", encoding="utf-8") as f:
+                    writer = csv.writer(f)
+                    writer.writerow(CSV_HEADERS)
+    except Exception as e:
+        print(f"[Warning] Could not initialize CSV file: {e}")
 
 init_csv()
 
@@ -44,14 +52,18 @@ def save_to_csv(data: dict):
     Saves exactly: bhk (number or null), property_type (flat/villa/plot/other or null),
     locality (string or null), and area_sqft (number or null). No other fields.
     """
-    with open(CSV_FILE, mode="a", newline="", encoding="utf-8") as f:
-        writer = csv.writer(f)
-        writer.writerow([
-            data.get("bhk") if data.get("bhk") is not None else "",
-            data.get("property_type") if data.get("property_type") is not None else "",
-            data.get("locality") if data.get("locality") is not None else "",
-            data.get("area_sqft") if data.get("area_sqft") is not None else "",
-        ])
+    try:
+        init_csv()
+        with open(CSV_FILE, mode="a", newline="", encoding="utf-8") as f:
+            writer = csv.writer(f)
+            writer.writerow([
+                data.get("bhk") if data.get("bhk") is not None else "",
+                data.get("property_type") if data.get("property_type") is not None else "",
+                data.get("locality") if data.get("locality") is not None else "",
+                data.get("area_sqft") if data.get("area_sqft") is not None else "",
+            ])
+    except Exception as e:
+        print(f"[Warning] Could not save to CSV ({CSV_FILE}): {e}")
 
 app = FastAPI(
     title="propOG Property Listing Cleaner API",
@@ -258,12 +270,16 @@ def download_csv():
     raise HTTPException(status_code=404, detail="CSV file not found.")
 
 # Mount static folder and serve frontend
-os.makedirs("static", exist_ok=True)
-app.mount("/static", StaticFiles(directory="static"), name="static")
+STATIC_DIR = os.path.join(BASE_DIR, "static")
+if os.path.exists(STATIC_DIR):
+    app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 
 @app.get("/")
 def read_root():
-    return FileResponse("static/index.html")
+    index_file = os.path.join(STATIC_DIR, "index.html")
+    if os.path.exists(index_file):
+        return FileResponse(index_file)
+    return {"message": "propOG Listing Cleaner API is running. Access /api/clean-listing for POST requests."}
 
 if __name__ == "__main__":
     print("Starting propOG Listing Cleaner server on http://127.0.0.1:8005 ...")

@@ -511,11 +511,19 @@
                     body: JSON.stringify({ raw_description: rawDescription })
                 });
 
-                const data = await response.json();
                 cleanBtn.disabled = false;
 
+                let data;
+                const contentType = response.headers.get("content-type") || "";
+                if (contentType.includes("application/json")) {
+                    data = await response.json();
+                } else {
+                    const errorText = await response.text();
+                    data = { detail: errorText || `Server responded with status ${response.status} ${response.statusText}` };
+                }
+
                 if (!response.ok) {
-                    statusDiv.innerHTML = `<div class="error-box"><strong>Error:</strong> ${data.detail || 'Failed to process request'}</div>`;
+                    statusDiv.innerHTML = `<div class="error-box"><strong>Error (${response.status}):</strong> ${data.detail || 'Failed to process request'}</div>`;
                     return;
                 }
 
@@ -525,7 +533,9 @@
 
             } catch (err) {
                 cleanBtn.disabled = false;
-                statusDiv.innerHTML = `<div class="error-box"><strong>Network Error:</strong> ${err.message}. Please ensure the server is running on http://127.0.0.1:8005.</div>`;
+                const isLocal = window.location.hostname === '127.0.0.1' || window.location.hostname === 'localhost' || window.location.protocol === 'file:';
+                const tip = isLocal ? ' Please ensure the local server is running on http://127.0.0.1:8005.' : '';
+                statusDiv.innerHTML = `<div class="error-box"><strong>Request Failed:</strong> ${err.message}.${tip}</div>`;
             }
         }
 
