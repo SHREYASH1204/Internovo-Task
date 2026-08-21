@@ -1,0 +1,606 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>propOG - AI Property Listing Cleaner</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #3b82f6;
+            --primary-hover: #2563eb;
+            --primary-bg: #eff6ff;
+            --success: #10b981;
+            --success-bg: #ecfdf5;
+            --success-border: #a7f3d0;
+            --warning: #f59e0b;
+            --warning-bg: #fffbeb;
+            --warning-border: #fde68a;
+            --danger: #ef4444;
+            --danger-bg: #fef2f2;
+            --danger-border: #fecaca;
+            --bg: #f8fafc;
+            --card-bg: #ffffff;
+            --text-main: #0f172a;
+            --text-muted: #64748b;
+            --border: #e2e8f0;
+            --radius: 12px;
+            --shadow: 0 4px 6px -1px rgb(0 0 0 / 0.07), 0 2px 4px -2px rgb(0 0 0 / 0.05);
+            --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.08), 0 4px 6px -4px rgb(0 0 0 / 0.04);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: var(--bg);
+            color: var(--text-main);
+            min-height: 100vh;
+            padding: 2.5rem 1.5rem;
+            line-height: 1.5;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        header {
+            margin-bottom: 2rem;
+        }
+
+        .brand-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            background: #dbeafe;
+            color: #1e40af;
+            padding: 0.25rem 0.65rem;
+            border-radius: 9999px;
+            margin-bottom: 0.75rem;
+        }
+
+        h1 {
+            font-size: 2rem;
+            font-weight: 800;
+            color: var(--text-main);
+            letter-spacing: -0.025em;
+            margin-bottom: 0.5rem;
+        }
+
+        .subtitle {
+            color: var(--text-muted);
+            font-size: 1rem;
+        }
+
+        .card {
+            background: var(--card-bg);
+            border-radius: var(--radius);
+            border: 1px solid var(--border);
+            box-shadow: var(--shadow);
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            transition: box-shadow 0.2s ease;
+        }
+
+        .card:hover {
+            box-shadow: var(--shadow-lg);
+        }
+
+        .presets {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+            margin-bottom: 1rem;
+        }
+
+        .presets-label {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            margin-right: 0.25rem;
+        }
+
+        .preset-btn {
+            background-color: #f1f5f9;
+            color: #334155;
+            border: 1px solid #e2e8f0;
+            padding: 0.35rem 0.75rem;
+            border-radius: 6px;
+            font-size: 0.82rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }
+
+        .preset-btn:hover {
+            background-color: #e2e8f0;
+            color: #0f172a;
+            border-color: #cbd5e1;
+        }
+
+        textarea {
+            width: 100%;
+            height: 120px;
+            padding: 0.85rem;
+            font-size: 0.95rem;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            font-family: inherit;
+            resize: vertical;
+            outline: none;
+            transition: border-color 0.2s, box-shadow 0.2s;
+            margin-bottom: 1rem;
+            background-color: #fafafa;
+        }
+
+        textarea:focus {
+            background-color: #fff;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+        }
+
+        .action-bar {
+            display: flex;
+            gap: 0.75rem;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        button.btn-primary {
+            background-color: var(--primary);
+            color: white;
+            padding: 0.75rem 1.4rem;
+            border: none;
+            border-radius: 8px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            box-shadow: 0 2px 4px rgba(37, 99, 235, 0.2);
+            transition: all 0.15s ease;
+        }
+
+        button.btn-primary:hover {
+            background-color: var(--primary-hover);
+            box-shadow: 0 4px 6px rgba(37, 99, 235, 0.3);
+            transform: translateY(-1px);
+        }
+
+        button.btn-primary:disabled {
+            background-color: #94a3b8;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .btn-download {
+            background-color: #0f172a;
+            color: white;
+            padding: 0.75rem 1.25rem;
+            border: none;
+            border-radius: 8px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            text-decoration: none;
+            transition: all 0.15s ease;
+        }
+
+        .btn-download:hover {
+            background-color: #1e293b;
+            transform: translateY(-1px);
+        }
+
+        .flag-box {
+            padding: 1.1rem 1.25rem;
+            border-radius: 10px;
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+        }
+
+        .flag-box.needs-info {
+            background-color: var(--warning-bg);
+            border: 1px solid var(--warning-border);
+            color: #92400e;
+        }
+
+        .flag-box.sufficient {
+            background-color: var(--success-bg);
+            border: 1px solid var(--success-border);
+            color: #065f46;
+        }
+
+        .flag-icon {
+            font-size: 1.4rem;
+            line-height: 1;
+        }
+
+        .flag-title {
+            font-weight: 700;
+            font-size: 1rem;
+            margin-bottom: 0.25rem;
+        }
+
+        .flag-desc {
+            font-size: 0.88rem;
+            line-height: 1.4;
+        }
+
+        .badge-missing {
+            display: inline-block;
+            background: #fee2e2;
+            color: #991b1b;
+            font-size: 0.75rem;
+            font-weight: 600;
+            padding: 0.15rem 0.5rem;
+            border-radius: 4px;
+            margin-left: 0.25rem;
+        }
+
+        .fields-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .field-card {
+            background: #f8fafc;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 0.9rem;
+        }
+
+        .field-card.missing {
+            background: #fff5f5;
+            border-color: #fed7d7;
+        }
+
+        .field-label {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--text-muted);
+            font-weight: 600;
+            margin-bottom: 0.35rem;
+        }
+
+        .field-value {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: var(--text-main);
+        }
+
+        .field-value.null-val {
+            color: #94a3b8;
+            font-style: italic;
+            font-weight: 500;
+        }
+
+        .cleaned-section {
+            background: #f8fafc;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            padding: 1.1rem;
+            margin-bottom: 1.25rem;
+        }
+
+        .cleaned-title {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: #1e293b;
+            margin-bottom: 0.5rem;
+        }
+
+        .cleaned-desc {
+            font-size: 0.95rem;
+            color: #334155;
+            margin-bottom: 0.85rem;
+            line-height: 1.5;
+        }
+
+        .tags-container {
+            display: flex;
+            gap: 0.4rem;
+            flex-wrap: wrap;
+        }
+
+        .tag-chip {
+            background: #e2e8f0;
+            color: #334155;
+            padding: 0.2rem 0.6rem;
+            border-radius: 9999px;
+            font-size: 0.78rem;
+            font-weight: 600;
+        }
+
+        .csv-note {
+            background: #f0fdf4;
+            border: 1px solid #bbf7d0;
+            border-radius: 8px;
+            padding: 0.75rem 1rem;
+            font-size: 0.85rem;
+            color: #166534;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 1.25rem;
+        }
+
+        .csv-note code {
+            background: #dcfce7;
+            padding: 0.1rem 0.4rem;
+            border-radius: 4px;
+            font-weight: 600;
+            font-size: 0.82rem;
+        }
+
+        pre {
+            background-color: #0f172a;
+            color: #e2e8f0;
+            padding: 1rem;
+            border-radius: 8px;
+            overflow-x: auto;
+            font-size: 0.85rem;
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+        }
+
+        .loading-box {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: var(--primary);
+            font-weight: 600;
+            padding: 1rem;
+        }
+
+        .spinner {
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(59, 130, 246, 0.2);
+            border-top-color: var(--primary);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .error-box {
+            background-color: var(--danger-bg);
+            border: 1px solid var(--danger-border);
+            color: #991b1b;
+            padding: 1rem;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            margin-top: 1rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="brand-badge">⚡ propOG AI Cleaner</div>
+            <h1>Listing Data Cleaner & Extractor</h1>
+            <p class="subtitle">Extracts structured property attributes (<code>bhk</code>, <code>property_type</code>, <code>locality</code>, <code>area_sqft</code>) into CSV without hallucinating missing fields.</p>
+        </header>
+
+        <div class="card">
+            <div class="presets">
+                <span class="presets-label">Examples:</span>
+                <button class="preset-btn" onclick="setPreset(1)">Complete Info (All 4 Fields)</button>
+                <button class="preset-btn" onclick="setPreset(2)">Missing 1 Field (area_sqft)</button>
+                <button class="preset-btn" onclick="setPreset(3)">⚠️ Needs More Info (&gt; 2 Missing)</button>
+            </div>
+
+            <textarea id="rawDescription" placeholder="Enter raw, unformatted agent listing note here..."></textarea>
+            
+            <div class="action-bar">
+                <button id="cleanBtn" class="btn-primary" onclick="cleanListing()">
+                    <span>✨ Clean & Save to CSV</span>
+                </button>
+                <a id="downloadBtn" class="btn-download" href="/api/download-csv" target="_blank">
+                    <span>📥 Download CSV</span>
+                </a>
+            </div>
+        </div>
+
+        <div id="status"></div>
+
+        <div id="resultContainer" class="card" style="display: none;">
+            <!-- Status flag banner -->
+            <div id="flagBanner"></div>
+
+            <!-- CSV Save notification -->
+            <div class="csv-note">
+                <span>📁 <strong>Saved to cleaned_listings.csv:</strong> <code>bhk</code>, <code>property_type</code>, <code>locality</code>, <code>area_sqft</code></span>
+            </div>
+
+            <!-- 4 Structured Fields -->
+            <h3 style="font-size: 0.95rem; text-transform: uppercase; color: var(--text-muted); letter-spacing: 0.05em; margin-bottom: 0.75rem;">
+                Extracted CSV Fields (No Hallucination)
+            </h3>
+            <div class="fields-grid" id="fieldsGrid"></div>
+
+            <!-- Cleaned Presentation -->
+            <div class="cleaned-section">
+                <div class="cleaned-title" id="resHeadline"></div>
+                <div class="cleaned-desc" id="resDescription"></div>
+                <div class="tags-container" id="resTags"></div>
+            </div>
+
+            <!-- Raw JSON response viewer -->
+            <details style="margin-top: 1rem;">
+                <summary style="cursor: pointer; font-size: 0.85rem; font-weight: 600; color: var(--text-muted);">View Raw JSON Response</summary>
+                <pre id="jsonResult" style="margin-top: 0.5rem;"></pre>
+            </details>
+        </div>
+    </div>
+
+    <script>
+        const PRESETS = {
+            1: "2bhk flat for sale in koramangala 1200 sqft urgent sale prime loc near metro",
+            2: "luxurious 3bhk villa for sale in whitefield, gated society master suite garden",
+            3: "urgent sale flat available immediately prime location close to amenities no brokerage"
+        };
+
+        function setPreset(num) {
+            document.getElementById('rawDescription').value = PRESETS[num];
+        }
+
+        // Initialize with complete preset
+        setPreset(1);
+
+        function getApiUrl() {
+            if (window.location.protocol === 'file:') {
+                return 'http://127.0.0.1:8005/api/clean-listing';
+            }
+            return '/api/clean-listing';
+        }
+
+        function getDownloadUrl() {
+            if (window.location.protocol === 'file:') {
+                return 'http://127.0.0.1:8005/api/download-csv';
+            }
+            return '/api/download-csv';
+        }
+
+        document.getElementById('downloadBtn').href = getDownloadUrl();
+
+        async function cleanListing() {
+            const rawDescription = document.getElementById('rawDescription').value;
+            const statusDiv = document.getElementById('status');
+            const resultContainer = document.getElementById('resultContainer');
+            const cleanBtn = document.getElementById('cleanBtn');
+
+            if (!rawDescription.trim()) {
+                alert("Please enter a property note.");
+                return;
+            }
+
+            statusDiv.innerHTML = '<div class="loading-box"><div class="spinner"></div><span>Validating note & cleaning with AI...</span></div>';
+            resultContainer.style.display = 'none';
+            cleanBtn.disabled = true;
+
+            try {
+                const response = await fetch(getApiUrl(), {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ raw_description: rawDescription })
+                });
+
+                const data = await response.json();
+                cleanBtn.disabled = false;
+
+                if (!response.ok) {
+                    statusDiv.innerHTML = `<div class="error-box"><strong>Error:</strong> ${data.detail || 'Failed to process request'}</div>`;
+                    return;
+                }
+
+                statusDiv.innerHTML = '';
+                renderResult(data);
+                resultContainer.style.display = 'block';
+
+            } catch (err) {
+                cleanBtn.disabled = false;
+                statusDiv.innerHTML = `<div class="error-box"><strong>Network Error:</strong> ${err.message}. Please ensure the server is running on http://127.0.0.1:8005.</div>`;
+            }
+        }
+
+        function renderResult(data) {
+            const flagBanner = document.getElementById('flagBanner');
+            const missing = data.missing_fields || [];
+            
+            // Check if more than two fields came back missing
+            const needsMoreInfo = data.needs_more_info || missing.length > 2;
+
+            if (needsMoreInfo) {
+                flagBanner.className = 'flag-box needs-info';
+                flagBanner.innerHTML = `
+                    <div class="flag-icon">⚠️</div>
+                    <div>
+                        <div class="flag-title">Needs More Info (Flagged)</div>
+                        <div class="flag-desc">
+                            More than 2 fields are missing from this listing (${missing.length}/4 missing: <strong>${missing.join(', ')}</strong>). Please ask the agent or seller for more property details.
+                        </div>
+                    </div>
+                `;
+            } else {
+                flagBanner.className = 'flag-box sufficient';
+                const missingText = missing.length > 0 ? ` (${missing.length} missing: ${missing.join(', ')})` : '';
+                flagBanner.innerHTML = `
+                    <div class="flag-icon">✅</div>
+                    <div>
+                        <div class="flag-title">Listing Info Complete / Sufficient</div>
+                        <div class="flag-desc">
+                            Sufficient core property fields present${missingText}. Extracted and saved to CSV.
+                        </div>
+                    </div>
+                `;
+            }
+
+            // Render 4 fields grid
+            const grid = document.getElementById('fieldsGrid');
+            grid.innerHTML = `
+                <div class="field-card ${data.bhk === null ? 'missing' : ''}">
+                    <div class="field-label">BHK (Number / Null)</div>
+                    <div class="field-value ${data.bhk === null ? 'null-val' : ''}">${data.bhk !== null ? data.bhk + ' BHK' : 'null'}</div>
+                </div>
+                <div class="field-card ${data.property_type === null ? 'missing' : ''}">
+                    <div class="field-label">Property Type (flat/villa/plot/other)</div>
+                    <div class="field-value ${data.property_type === null ? 'null-val' : ''}">${data.property_type !== null ? data.property_type : 'null'}</div>
+                </div>
+                <div class="field-card ${data.locality === null ? 'missing' : ''}">
+                    <div class="field-label">Locality (String / Null)</div>
+                    <div class="field-value ${data.locality === null ? 'null-val' : ''}">${data.locality !== null ? data.locality : 'null'}</div>
+                </div>
+                <div class="field-card ${data.area_sqft === null ? 'missing' : ''}">
+                    <div class="field-label">Area (sqft) (Number / Null)</div>
+                    <div class="field-value ${data.area_sqft === null ? 'null-val' : ''}">${data.area_sqft !== null ? data.area_sqft + ' sqft' : 'null'}</div>
+                </div>
+            `;
+
+            // Cleaned headline & description
+            document.getElementById('resHeadline').textContent = data.headline || '';
+            document.getElementById('resDescription').textContent = data.description || '';
+
+            // Tags
+            const tagsDiv = document.getElementById('resTags');
+            tagsDiv.innerHTML = '';
+            if (data.tags && Array.isArray(data.tags)) {
+                data.tags.forEach(t => {
+                    const span = document.createElement('span');
+                    span.className = 'tag-chip';
+                    span.textContent = t;
+                    tagsDiv.appendChild(span);
+                });
+            }
+
+            // JSON preview
+            document.getElementById('jsonResult').textContent = JSON.stringify(data, null, 2);
+        }
+    </script>
+</body>
+</html>
